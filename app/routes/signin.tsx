@@ -1,0 +1,65 @@
+import { Button } from '~/components/ui/button';
+import { Link, useOutletContext } from '@remix-run/react';
+import { SupabaseOutletContext } from '~/lib/supabase';
+import { getSupabaseWithSessionAndHeaders } from '~/lib/supabase.server';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+import { json, redirect } from '@remix-run/node';
+import { AppLogo } from '~/components/app-logo';
+import { GitHubLogoIcon } from '@radix-ui/react-icons';
+import { ThemeToggle } from './resources.theme-toggle';
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { headers, serverSession } = await getSupabaseWithSessionAndHeaders({
+    request,
+  });
+
+  if (serverSession) {
+    return redirect('/home', { headers });
+  }
+
+  return json({ success: true }, { headers });
+};
+
+export default function Signin() {
+  const { supabase, domainUrl } = useOutletContext<SupabaseOutletContext>();
+
+  const handleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${domainUrl}/resources/auth/callback`,
+      },
+    });
+  };
+  return (
+    <section className='w-full min-h-screen flex flex-col'>
+      <nav className='w-full flex items-center justify-between p-4'>
+        <Link to='/'>
+          <AppLogo className='h-8 w-8 md:h-10 md:w-10' />
+        </Link>
+        <h1 className='text-xl font-semibold text-foreground'>xscape</h1>
+        <ThemeToggle />
+      </nav>
+      <div className='container flex flex-col justify-start items-center px-4 md:px-6 flex-1 mt-24'>
+        <div className='flex flex-col items-center space-y-4 text-center p-4'>
+          <h1 className='text-3xl md:text-5xl font-bold tracking-tighter'>
+            Log in using <br />
+            <span className='px-1 font-extrabold bg-gradient-to-r from-orange-700 via-blue-500 to-green-400 text-transparent bg-clip-text bg-300% animate-gradient'>
+              Github
+            </span>{' '}
+            <br />
+            and discover more
+          </h1>
+
+          <p className='text-gray-500 mt-2'>
+            Our posts and comments are powered by Markdown
+          </p>
+        </div>
+
+        <Button onClick={handleSignIn}>
+          <GitHubLogoIcon className='mr-2 h-4 w-4' />
+          Github
+        </Button>
+      </div>
+    </section>
+  );
+}
